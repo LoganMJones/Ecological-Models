@@ -1,7 +1,9 @@
 ## setup
 using DifferentialEquations
-#using GLMakie
 using GLMakie
+using ColorSchemes
+using NonlinearSolve
+using SteadyStateDiffEq
 
 
 
@@ -20,7 +22,7 @@ function LV!(dn, n, p, t)
     nothing
 end
 ## run
-n0 = [0.1, 0.12] # initial conditions
+n0 = [0.1, 0.1] # initial conditions
 tspan = (0.0, 40.0)
 # p  = (r1=1.2, r2=1.0, K1=1.0, K2=1.0, α11=1.0, α12=1.0, α21=0.5, α22=1.0)
 p = (
@@ -41,13 +43,25 @@ ax = Axis(fig[1,1],
     xautolimitmargin = (0.0, 0.0)  # remove padding
 )
 
-lines!(ax, sol.t, sol[1, :], label="Species 1", color=:blue)
-lines!(ax, sol.t, sol[2, :], label="Species 2", color=:red)
+lines!(ax, sol.t, sol[1, :], label="Species 1", color=ColorSchemes.seaborn_colorblind[1])
+lines!(ax, sol.t, sol[2, :], label="Species 2", color=ColorSchemes.seaborn_colorblind[2])
 axislegend(ax)
 
-param_str = join(["$(k) = $(v)" for (k, v) in pairs(p)], "    ")
+param_str = "n1 = n2 = $(n0[1])  " * join(["$(k) = $(v)" for (k, v) in pairs(p)], "    ")
 Label(fig[2,1], param_str, tellwidth = false)
-# this figure shows the dynamics of a two species lotka-volterra competition model from t = [ 0.0, 40.0 ]
-fig
 
-# save("lotka_volterra.png", fig) 
+
+steady_state = SteadyStateProblem(LV!, n0, p)
+SSsol = solve(steady_state, DynamicSS(Tsit5()) )
+
+eq = round.(SSsol.u, digits=3)
+
+# println("Equilibrium: n1 = $(eq[1]), n2 = $(eq[2])")
+
+eq_str = "Equilibrium: n1 = $(eq[1])    n2 = $(eq[2])"
+Label(fig[3,1], eq_str, tellwidth = false)
+
+# this figure shows the dynamics of a two species lotka-volterra competition model from t = [ 0.0, 30.0 ]
+save("lotka_volterra.png", fig) 
+
+
